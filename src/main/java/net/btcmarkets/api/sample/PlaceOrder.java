@@ -19,7 +19,7 @@ public class PlaceOrder {
     private static final String API_KEY = "Please sign up on the website to get an api key and replace it here";
     private static final String PRIVATE_KEY = "Replace your private key here";
 
-    public static String BASEURL = "replace the API url here";
+    public static String BASEURL = "https://api.btcmarkets.net";
     private static String ORDER_CREATE_PATH = "/order/create";
     private static final String APIKEY_HEADER = "apikey";
     private static final String TIMESTAMP_HEADER = "timestamp";
@@ -89,6 +89,7 @@ public class PlaceOrder {
 
         }
         catch (Exception e) {
+            e.printStackTrace();
             throw new RuntimeException("unable to execute json call:" + e);
         } finally {
             // close http connection
