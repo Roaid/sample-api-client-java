@@ -1,5 +1,8 @@
 package net.btcmarkets.api.sample;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 
@@ -16,8 +19,8 @@ import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
 
 public class PlaceOrder {
-    private static final String API_KEY = "Please sign up on the website to get an api key and replace it here";
-    private static final String PRIVATE_KEY = "Replace your private key here";
+    private static String API_KEY;
+    private static String PRIVATE_KEY;
 
     public static String BASEURL = "https://api.btcmarkets.net";
     private static String ORDER_CREATE_PATH = "/order/create";
@@ -28,6 +31,7 @@ public class PlaceOrder {
     private static final String ALGORITHM = "HmacSHA512";
 
     public static void main(String[] args) throws Exception {
+        loadKeys("keys.conf");
         String response = "";
         try {
             // input parameters for creating a new account. data is posted via https
@@ -135,5 +139,18 @@ public class PlaceOrder {
             System.out.println(e);
         }
         return signature;
+    }
+
+    public static void loadKeys(String file) throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(file));
+        String line;
+        while ((line = br.readLine()) != null) {
+            if (line.startsWith("API_KEY=")) {
+                API_KEY = line.substring(8);
+            } else if (line.startsWith("PRIVATE_KEY=")) {
+                PRIVATE_KEY = line.substring(12);
+            }
+        }
+        br.close();
     }
 }
