@@ -13,7 +13,9 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -23,32 +25,27 @@ public class PlaceOrder {
     private static String PRIVATE_KEY;
 
     public static String BASEURL = "https://api.btcmarkets.net";
-    private static String ORDER_CREATE_PATH = "/order/create";
     private static final String APIKEY_HEADER = "apikey";
     private static final String TIMESTAMP_HEADER = "timestamp";
     private static final String SIGNATURE_HEADER = "signature";
     private static final String ENCODING = "UTF-8";
     private static final String ALGORITHM = "HmacSHA512";
 
-    public static void main(String[] args) throws Exception {
-        loadKeys("keys.conf");
+    public static void sendRequest(String path, String postData) {
         String response = "";
         try {
-            // input parameters for creating a new account. data is posted via https
-            String postData = "{\"currency\":\"AUD\",\"instrument\":\"BTC\",\"price\":13000000000,\"volume\":10000000,\"orderSide\":\"Bid\",\"ordertype\":\"Limit\",\"clientRequestId\":\"1\"}";
-
             // get the current timestamp. It's best to use ntp or similar services in order to sync
             // your server time
             String timestamp = Long.toString(System.currentTimeMillis());
 
             // create the string that needs to be signed
-            String stringToSign = buildStringToSign(ORDER_CREATE_PATH, null, postData, timestamp);
+            String stringToSign = buildStringToSign(path, null, postData, timestamp);
 
             // build signature to be included in the http header
             String signature = signRequest(PRIVATE_KEY, stringToSign);
 
             // full url path
-            String url = BASEURL + ORDER_CREATE_PATH;
+            String url = BASEURL + path;
 
             response = executeHttpPost(postData, url, API_KEY, PRIVATE_KEY, signature, timestamp);
         }
@@ -64,26 +61,31 @@ public class PlaceOrder {
         HttpResponse httpResponse = null;
 
         try {
-            HttpPost httpPost = new HttpPost(url);
-
-            // post any data that needs to go with http request.
-            if (postData != null) {
-                httpPost.setEntity(new StringEntity(postData, ENCODING));
+            // HttpPost httpPost = new HttpPost(url);
+            HttpRequestBase request;
+            if (postData == null) {
+                request = new HttpGet(url);
+            } else {
+                // post any data that needs to go with http request.
+                request = new HttpPost(url);
+                ((HttpPost) request).setEntity(new StringEntity(postData, ENCODING));
             }
+
             // Set http headers
-            httpPost.addHeader("Accept", "*/*");
-            httpPost.addHeader("Accept-Charset", ENCODING);
-            httpPost.addHeader("Content-Type", "application/json");
+            request.addHeader("Accept", "*/*");
+            request.addHeader("Accept-Charset", ENCODING);
+            request.addHeader("Content-Type", "application/json");
 
             // Add signature, timestamp and apiKey to the http header
-            httpPost.addHeader(SIGNATURE_HEADER, signature);
-            httpPost.addHeader(APIKEY_HEADER, apiKey);
-            httpPost.addHeader(TIMESTAMP_HEADER, timestamp);
+            request.addHeader(SIGNATURE_HEADER, signature);
+            request.addHeader(APIKEY_HEADER, apiKey);
+            request.addHeader(TIMESTAMP_HEADER, timestamp);
 
             // execute http request
-            httpResponse = httpClient.execute(httpPost);
+            httpResponse = httpClient.execute(request);
 
             if (httpResponse.getStatusLine().getStatusCode() != 200) {
+                System.err.println(httpResponse);
                 throw new RuntimeException(httpResponse.getStatusLine().getReasonPhrase());
             }
             // return JSON results as String
@@ -116,8 +118,10 @@ public class PlaceOrder {
         if (queryString != null) {
             stringToSign += queryString + "\n";
         }
-        stringToSign += timestamp + "\n";
-        stringToSign += postData;
+        stringToSign += timestamp;
+        if (postData != null) {
+            stringToSign += "\n" + postData;
+        }
         return stringToSign;
     }
 
@@ -152,5 +156,13 @@ public class PlaceOrder {
             }
         }
         br.close();
+    }
+
+    public static void main(String[] args) throws Exception {
+        loadKeys("keys.conf");
+        sendRequest(
+                "/order/create",
+                "{\"currency\":\"AUD\",\"instrument\":\"BTC\",\"price\":13000000000,\"volume\":10000000,\"orderSide\":\"Bid\",\"ordertype\":\"Limit\",\"clientRequestId\":\"1\"}");
+        sendRequest("/order/history", "{\"currency\":\"AUD\",\"instrument\":\"BTC\"}");
     }
 }
