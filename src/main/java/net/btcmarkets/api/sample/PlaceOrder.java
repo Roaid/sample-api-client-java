@@ -32,6 +32,7 @@ public class PlaceOrder {
     private static final String ALGORITHM = "HmacSHA512";
 
     public static void sendRequest(String path, String postData) {
+        System.out.println("===Request Start===");
         String response = "";
         try {
             // get the current timestamp. It's best to use ntp or similar services in order to sync
@@ -40,9 +41,12 @@ public class PlaceOrder {
 
             // create the string that needs to be signed
             String stringToSign = buildStringToSign(path, null, postData, timestamp);
+            System.out.println("===stringToSign Begins===\n" + stringToSign
+                    + "\n===stringToSign Ends===");
 
             // build signature to be included in the http header
             String signature = signRequest(PRIVATE_KEY, stringToSign);
+            System.out.println("===signature Begins===\n" + signature + "\n===signature Ends===");
 
             // full url path
             String url = BASEURL + path;
@@ -52,7 +56,8 @@ public class PlaceOrder {
         catch (Exception e) {
             System.out.println(e);
         }
-        System.out.println(response);
+        System.out.println("===response Begins===\n" + response + "\n===response Ends===");
+        System.out.println("===Request End===\n");
     }
 
     public static String executeHttpPost(String postData, String url, String apiKey,
