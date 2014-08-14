@@ -168,7 +168,7 @@ public class PlaceOrder {
         sendRequest(
                 "/order/create",
                 "{\"currency\":\"AUD\",\"instrument\":\"BTC\",\"price\":13000000000,\"volume\":10000000,\"orderSide\":\"Bid\",\"ordertype\":\"Limit\",\"clientRequestId\":\"1\"}");
-        sendRequest("/order/history", "{\"currency\":\"AUD\",\"instrument\":\"BTC\",\"since\":1}");
+        sendRequest("/order/history", "{\"currency\":\"AUD\",\"instrument\":\"BTC\",\"since\":1,\"limit\":10}");
         sendRequest("/order/history", "{\"currency\":\"AUD\",\"instrument\":\"BTC\",\"clientRequestId\":\"1\"}");
     }
 }
