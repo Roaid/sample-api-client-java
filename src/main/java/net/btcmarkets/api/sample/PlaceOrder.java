@@ -22,8 +22,8 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
 
 public class PlaceOrder {
-    private static String API_KEY;
-    private static String PRIVATE_KEY;
+    private String apiKey;
+    private String privateKey;
 
     public static String BASEURL = "https://api.btcmarkets.net";
     private static final String APIKEY_HEADER = "apikey";
@@ -32,7 +32,23 @@ public class PlaceOrder {
     private static final String ENCODING = "UTF-8";
     private static final String ALGORITHM = "HmacSHA512";
 
-    public static void sendRequest(String path, String postData) {
+    public PlaceOrder(String apiKey, String privateKey) throws IOException {
+        this(null, apiKey, privateKey);
+    }
+
+    public PlaceOrder(String configFile) throws IOException {
+        this(configFile, null, null);
+    }
+
+    private PlaceOrder(String configFile, String apiKey, String privateKey) throws IOException {
+        this.apiKey = apiKey;
+        this.privateKey = privateKey;
+        if (configFile != null) {
+            loadKeys(configFile);
+        }
+    }
+
+    public void sendRequest(String path, String postData) {
         System.out.println("===Request Start===");
         String response = "";
         try {
@@ -46,13 +62,13 @@ public class PlaceOrder {
                     + "\n===stringToSign Ends===");
 
             // build signature to be included in the http header
-            String signature = signRequest(PRIVATE_KEY, stringToSign);
+            String signature = signRequest(privateKey, stringToSign);
             System.out.println("===signature Begins===\n" + signature + "\n===signature Ends===");
 
             // full url path
             String url = BASEURL + path;
 
-            response = executeHttpPost(postData, url, API_KEY, PRIVATE_KEY, signature, timestamp);
+            response = executeHttpPost(postData, url, apiKey, privateKey, signature, timestamp);
         }
         catch (Exception e) {
             System.out.println(e);
@@ -61,7 +77,7 @@ public class PlaceOrder {
         System.out.println("===Request End===\n");
     }
 
-    public static String executeHttpPost(String postData, String url, String apiKey,
+    private static String executeHttpPost(String postData, String url, String apiKey,
             String privateKey, String signature, String timestamp) throws Exception {
         DefaultHttpClient httpClient = new DefaultHttpClient();
         HttpResponse httpResponse = null;
@@ -150,27 +166,30 @@ public class PlaceOrder {
         return signature;
     }
 
-    public static void loadKeys(String file) throws IOException {
-        BufferedReader br = new BufferedReader(new FileReader(file));
+    private void loadKeys(String configFile) throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(configFile));
         String line;
         while ((line = br.readLine()) != null) {
             if (line.startsWith("API_KEY=")) {
-                API_KEY = line.substring(8);
+                apiKey = line.substring(8);
             } else if (line.startsWith("PRIVATE_KEY=")) {
-                PRIVATE_KEY = line.substring(12);
+                privateKey = line.substring(12);
             }
         }
         br.close();
     }
 
     public static void main(String[] args) throws Exception {
-        loadKeys("keys.conf");
-        sendRequest(
+        PlaceOrder p = new PlaceOrder("keys.conf");
+        p.sendRequest(
                 "/order/create",
                 "{\"currency\":\"AUD\",\"instrument\":\"BTC\",\"price\":13000000000,\"volume\":10000000,\"orderSide\":\"Bid\",\"ordertype\":\"Limit\",\"clientRequestId\":\"1\"}");
-        sendRequest("/order/history", "{\"currency\":\"AUD\",\"instrument\":\"BTC\",\"limit\":10,\"since\":1}");
-        sendRequest("/order/open", "{\"currency\":\"AUD\",\"instrument\":\"BTC\",\"limit\":10,\"since\":1}");
-        sendRequest("/order/trade/history", "{\"currency\":\"AUD\",\"instrument\":\"BTC\",\"limit\":10,\"since\":1}");
-        sendRequest("/account/balance", null);
+        p.sendRequest("/order/history",
+                "{\"currency\":\"AUD\",\"instrument\":\"BTC\",\"limit\":10,\"since\":1}");
+        p.sendRequest("/order/open",
+                "{\"currency\":\"AUD\",\"instrument\":\"BTC\",\"limit\":10,\"since\":1}");
+        p.sendRequest("/order/trade/history",
+                "{\"currency\":\"AUD\",\"instrument\":\"BTC\",\"limit\":10,\"since\":1}");
+        p.sendRequest("/account/balance", null);
     }
 }
