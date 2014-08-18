@@ -1,4 +1,4 @@
-package net.btcmarkets.api.sample;
+package net.btcmarkets.api;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -21,7 +21,7 @@ import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
 
-public class PlaceOrder {
+public class BTCMarketsClient {
     private String apiKey;
     private String privateKey;
 
@@ -32,15 +32,16 @@ public class PlaceOrder {
     private static final String ENCODING = "UTF-8";
     private static final String ALGORITHM = "HmacSHA512";
 
-    public PlaceOrder(String apiKey, String privateKey) throws IOException {
+    public BTCMarketsClient(String apiKey, String privateKey) throws IOException {
         this(null, apiKey, privateKey);
     }
 
-    public PlaceOrder(String configFile) throws IOException {
+    public BTCMarketsClient(String configFile) throws IOException {
         this(configFile, null, null);
     }
 
-    private PlaceOrder(String configFile, String apiKey, String privateKey) throws IOException {
+    private BTCMarketsClient(String configFile, String apiKey, String privateKey)
+            throws IOException {
         this.apiKey = apiKey;
         this.privateKey = privateKey;
         if (configFile != null) {
@@ -180,16 +181,16 @@ public class PlaceOrder {
     }
 
     public static void main(String[] args) throws Exception {
-        PlaceOrder p = new PlaceOrder("keys.conf");
-        p.sendRequest(
+        BTCMarketsClient client = new BTCMarketsClient("keys.conf");
+        client.sendRequest(
                 "/order/create",
                 "{\"currency\":\"AUD\",\"instrument\":\"BTC\",\"price\":13000000000,\"volume\":10000000,\"orderSide\":\"Bid\",\"ordertype\":\"Limit\",\"clientRequestId\":\"1\"}");
-        p.sendRequest("/order/history",
+        client.sendRequest("/order/history",
                 "{\"currency\":\"AUD\",\"instrument\":\"BTC\",\"limit\":10,\"since\":1}");
-        p.sendRequest("/order/open",
+        client.sendRequest("/order/open",
                 "{\"currency\":\"AUD\",\"instrument\":\"BTC\",\"limit\":10,\"since\":1}");
-        p.sendRequest("/order/trade/history",
+        client.sendRequest("/order/trade/history",
                 "{\"currency\":\"AUD\",\"instrument\":\"BTC\",\"limit\":10,\"since\":1}");
-        p.sendRequest("/account/balance", null);
+        client.sendRequest("/account/balance", null);
     }
 }
