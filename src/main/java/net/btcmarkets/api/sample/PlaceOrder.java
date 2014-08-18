@@ -67,7 +67,6 @@ public class PlaceOrder {
         HttpResponse httpResponse = null;
 
         try {
-            // HttpPost httpPost = new HttpPost(url);
             HttpRequestBase request;
             if (postData == null) {
                 request = new HttpGet(url);
