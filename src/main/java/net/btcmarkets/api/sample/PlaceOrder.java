@@ -19,6 +19,7 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.util.EntityUtils;
 
 public class PlaceOrder {
     private static String API_KEY;
@@ -107,7 +108,7 @@ public class PlaceOrder {
             if (httpResponse != null) {
                 HttpEntity entity = httpResponse.getEntity();
                 if (entity != null) {
-                    entity.consumeContent();
+                    EntityUtils.consume(entity);
                 }
             }
             if (httpClient != null) {
