@@ -123,9 +123,9 @@ public class PlaceOrder {
         if (queryString != null) {
             stringToSign += queryString + "\n";
         }
-        stringToSign += timestamp;
+        stringToSign += timestamp + "\n";
         if (postData != null) {
-            stringToSign += "\n" + postData;
+            stringToSign += postData;
         }
         return stringToSign;
     }
