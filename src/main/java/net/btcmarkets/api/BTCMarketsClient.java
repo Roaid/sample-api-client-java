@@ -228,7 +228,7 @@ public class BTCMarketsClient {
 
     private String getOrderString(String currency, String instrument, int limit, int since) {
         StringBuilder sb = new StringBuilder();
-        // These need to be in these specific order for the API to work
+        // These need to be in this specific order for the API to work
         sb.append("{\"currency\":\"");
         sb.append(currency);
         sb.append("\",\"instrument\":\"");
@@ -252,7 +252,7 @@ public class BTCMarketsClient {
     private String getNewOrderString(String currency, String instrument, long price, int volume,
             String orderSide, String orderType, String clientRequestId) {
         StringBuilder sb = new StringBuilder();
-        // These need to be in these specific order for the API to work
+        // These need to be in this specific order for the API to work
         sb.append("{\"currency\":\"");
         sb.append(currency);
         sb.append("\",\"instrument\":\"");
