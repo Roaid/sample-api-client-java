@@ -25,7 +25,14 @@ public class BTCMarketsClient {
     private String apiKey;
     private String privateKey;
 
-    public static String BASEURL = "https://api.btcmarkets.net";
+    public static boolean DEBUG = false;
+
+    private static final String BASEURL = "https://api.btcmarkets.net";
+    private static final String ORDER_CREATE_PATH = "/order/create";
+    private static final String ORDER_HISTORY_PATH = "/order/history";
+    private static final String ORDER_OPEN_PATH = "/order/open";
+    private static final String ORDER_TRADE_HISTORY_PATH = "/order/trade/history";
+    private static final String ACCOUNT_BALANCE_PATH = "/account/balance";
     private static final String APIKEY_HEADER = "apikey";
     private static final String TIMESTAMP_HEADER = "timestamp";
     private static final String SIGNATURE_HEADER = "signature";
@@ -49,8 +56,14 @@ public class BTCMarketsClient {
         }
     }
 
-    public void sendRequest(String path, String postData) {
-        System.out.println("===Request Start===");
+    private void debug(String msg) {
+        if (DEBUG) {
+            System.out.println(msg);
+        }
+    }
+
+    public String sendRequest(String path, String postData) {
+        debug("===Request Start===");
         String response = "";
         try {
             // get the current timestamp. It's best to use ntp or similar services in order to sync
@@ -59,12 +72,11 @@ public class BTCMarketsClient {
 
             // create the string that needs to be signed
             String stringToSign = buildStringToSign(path, null, postData, timestamp);
-            System.out.println("===stringToSign Begins===\n" + stringToSign
-                    + "\n===stringToSign Ends===");
+            debug("===stringToSign Begins===\n" + stringToSign + "\n===stringToSign Ends===");
 
             // build signature to be included in the http header
             String signature = signRequest(privateKey, stringToSign);
-            System.out.println("===signature Begins===\n" + signature + "\n===signature Ends===");
+            debug("===signature Begins===\n" + signature + "\n===signature Ends===");
 
             // full url path
             String url = BASEURL + path;
@@ -72,10 +84,11 @@ public class BTCMarketsClient {
             response = executeHttpPost(postData, url, apiKey, privateKey, signature, timestamp);
         }
         catch (Exception e) {
-            System.out.println(e);
+            System.err.println(e);
         }
-        System.out.println("===response Begins===\n" + response + "\n===response Ends===");
-        System.out.println("===Request End===\n");
+        debug("===response Begins===\n" + response + "\n===response Ends===");
+        debug("===Request End===\n");
+        return response;
     }
 
     private static String executeHttpPost(String postData, String url, String apiKey,
@@ -156,13 +169,13 @@ public class BTCMarketsClient {
             signature = Base64.encodeBase64String(mac.doFinal(data.getBytes()));
         }
         catch (InvalidKeyException e) {
-            System.out.println(e);
+            System.err.println(e);
         }
         catch (NoSuchAlgorithmException e) {
-            System.out.println(e);
+            System.err.println(e);
         }
         catch (Exception e) {
-            System.out.println(e);
+            System.err.println(e);
         }
         return signature;
     }
@@ -180,17 +193,93 @@ public class BTCMarketsClient {
         br.close();
     }
 
+    public String accountBalance() {
+        return sendRequest(ACCOUNT_BALANCE_PATH, null);
+    }
+
+    public String orderHistory(String currency, String instrument, int limit, int since) {
+        return sendRequest(ORDER_HISTORY_PATH, getOrderString(currency, instrument, limit, since));
+    }
+
+    public String orderHistory() {
+        return sendRequest(ORDER_HISTORY_PATH, getDefaultOrderString());
+    }
+
+    public String orderOpen(String currency, String instrument, int limit, int since) {
+        return sendRequest(ORDER_OPEN_PATH, getOrderString(currency, instrument, limit, since));
+    }
+
+    public String orderOpen() {
+        return sendRequest(ORDER_OPEN_PATH, getDefaultOrderString());
+    }
+
+    public String orderTradeHistory(String currency, String instrument, int limit, int since) {
+        return sendRequest(ORDER_TRADE_HISTORY_PATH,
+                getOrderString(currency, instrument, limit, since));
+    }
+
+    public String orderTradeHistory() {
+        return sendRequest(ORDER_TRADE_HISTORY_PATH, getDefaultOrderString());
+    }
+
+    private String getDefaultOrderString() {
+        return getOrderString("AUD", "BTC", 10, 1);
+    }
+
+    private String getOrderString(String currency, String instrument, int limit, int since) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\"currency\":\"");
+        sb.append(currency);
+        sb.append("\",\"instrument\":\"");
+        sb.append(instrument);
+        sb.append("\",\"limit\":");
+        sb.append(limit);
+        sb.append(",\"since\":");
+        sb.append(since);
+        sb.append("}");
+        return sb.toString();
+    }
+
+    public String createNewOrder(String currency, String instrument, long price, int volume,
+            String orderSide, String orderType, String clientRequestId) {
+        return sendRequest(
+                ORDER_CREATE_PATH,
+                getNewOrderString(currency, instrument, price, volume, orderSide, orderType,
+                        clientRequestId));
+    }
+
+    private String getNewOrderString(String currency, String instrument, long price, int volume,
+            String orderSide, String orderType, String clientRequestId) {
+        // "{\"currency\":\"AUD\",\"instrument\":\"BTC\",\"price\":13000000000,\"volume\":10000000,\"orderSide\":\"Bid\",\"ordertype\":\"Limit\",\"clientRequestId\":\"1\"}");
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\"currency\":\"");
+        sb.append(currency);
+        sb.append("\",\"instrument\":\"");
+        sb.append(instrument);
+        sb.append("\",\"price\":");
+        sb.append(price);
+        sb.append(",\"volume\":");
+        sb.append(volume);
+        sb.append(",\"orderSide\":\"");
+        sb.append(orderSide);
+        sb.append("\",\"ordertype\":\"");
+        sb.append(orderType);
+        sb.append("\",\"clientRequestId\":\"");
+        sb.append(clientRequestId);
+        sb.append("\"}");
+        return sb.toString();
+    }
+
     public static void main(String[] args) throws Exception {
         BTCMarketsClient client = new BTCMarketsClient("keys.conf");
-        client.sendRequest(
-                "/order/create",
-                "{\"currency\":\"AUD\",\"instrument\":\"BTC\",\"price\":13000000000,\"volume\":10000000,\"orderSide\":\"Bid\",\"ordertype\":\"Limit\",\"clientRequestId\":\"1\"}");
-        client.sendRequest("/order/history",
-                "{\"currency\":\"AUD\",\"instrument\":\"BTC\",\"limit\":10,\"since\":1}");
-        client.sendRequest("/order/open",
-                "{\"currency\":\"AUD\",\"instrument\":\"BTC\",\"limit\":10,\"since\":1}");
-        client.sendRequest("/order/trade/history",
-                "{\"currency\":\"AUD\",\"instrument\":\"BTC\",\"limit\":10,\"since\":1}");
-        client.sendRequest("/account/balance", null);
+        System.out.println(client.orderHistory("AUD", "BTC", 10, 1));
+        System.out.println(client.orderHistory());
+        System.out.println(client.orderOpen("AUD", "BTC", 10, 1));
+        System.out.println(client.orderOpen());
+        System.out.println(client.orderTradeHistory("AUD", "BTC", 10, 1));
+        System.out.println(client.orderTradeHistory());
+        System.out.println(client.accountBalance());
+        System.out.println(client.createNewOrder("AUD", "BTC", 13000000000L, 10000000, "Buy",
+                "Limit", "1"));
     }
 }
